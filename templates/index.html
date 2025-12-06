@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Political Compass Questionnaire</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    h1 {
+      text-align: center;
+    }
+    .question {
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #ddd;
+    }
+    .options label {
+      margin-right: 15px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <h1>Questionnaire</h1>
+  <p>Please answer each question by choosing one of the options.</p>
+
+  <form action="{{ url_for('result') }}" method="POST">
+    {% for qid, q in questions.items() %}
+      <div class="question">
+        <p><strong>{{ qid }}.</strong> {{ q.text }}</p>
+        <div class="options">
+          <label>
+            <input type="radio" name="q{{ qid }}" value="agree" required>
+            Mostly agree
+          </label>
+          <label>
+            <input type="radio" name="q{{ qid }}" value="disagree">
+            Mostly disagree
+          </label>
+          <label>
+            <input type="radio" name="q{{ qid }}" value="dontknow">
+            I don't know
+          </label>
+        </div>
+      </div>
+    {% endfor %}
+
+    <button type="submit">See My Position</button>
+  </form>
+</body>
+</html>

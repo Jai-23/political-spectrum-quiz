@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Your Result</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    .coords {
+      margin-top: 10px;
+      font-size: 18px;
+      text-align: center;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 10px auto 30px auto;
+      border: 1px solid #ccc;
+    }
+    #plot3d {
+      width: 100%;
+      height: 500px;
+      margin: 10px auto 30px auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>Your results</h1>
+  <p><strong>Note:</strong> positive values indicate 'left' leaning, negative values indicate 'right' leaning, for the respective axes</p>
+
+  <div class="coords">
+    <p><strong>social issues rating:</strong> {{ totals.social }}</p>
+    <p><strong>economic issues rating:</strong> {{ totals.economic }}</p>
+    <p><strong>foreign issues rating:</strong> {{ totals.foreign }}</p>
+  </div>
+
+  <h2>economic number line</h2>
+  <img src="data:image/png;base64,{{ econ_line_url }}" alt="Economic number line" />
+
+  <h2>social and economic plane</h2>
+  <img src="data:image/png;base64,{{ plane_url }}" alt="Social and economic plane" />
+
+  <h2>Interactive 3d Position</h2>
+  <div id="plot3d"></div>
+
+  <p style="text-align: center; margin-top: 20px;">
+    <a href="{{ url_for('index') }}">Take the quiz again</a>
+  </p>
+
+  <script>
+  // Pull totals from Flask into JS
+  const economic = {{ totals.economic | tojson }};
+  const social   = {{ totals.social   | tojson }};
+  const foreign  = {{ totals.foreign  | tojson }};
+
+  const limit = 12;
+  const L = limit;
+
+  // Tick values and labels WITHOUT minus signs
+  const tickVals  = [-12, -8, -4, 0, 4, 8, 12];
+  const tickText  = tickVals.map(v => Math.abs(v).toString());
+
+  // --- Point trace ---
+  const pointTrace = {
+    type: 'scatter3d',
+    mode: 'markers',
+    x: [economic],
+    y: [social],
+    z: [foreign],
+    marker: {
+      size: 6
+    },
+    name: 'Position'
+  };
+
+  // --- Vector from origin to (economic, social, foreign) ---
+  const vectorTrace = {
+    type: 'scatter3d',
+    mode: 'lines',
+    x: [0, economic],
+    y: [0, social],
+    z: [0, foreign],
+    line: {
+      width: 6
+    },
+    name: 'Vector'
+  };
+
+  // --- Coordinate planes: x=0, y=0, z=0 ---
+
+  // Plane x = 0 (economic = 0)
+  const xPlane = {
+    type: 'surface',
+    x: [[0, 0], [0, 0]],
+    y: [[-L, -L], [L, L]],
+    z: [[-L, L], [-L, L]],
+    opacity: 0.2,
+    showscale: false,
+    name: 'x = 0'
+  };
+
+  // Plane y = 0 (social = 0)
+  const yPlane = {
+    type: 'surface',
+    x: [[-L, -L], [L, L]],
+    y: [[0, 0], [0, 0]],
+    z: [[-L, L], [-L, L]],
+    opacity: 0.2,
+    showscale: false,
+    name: 'y = 0'
+  };
+
+  // Plane z = 0 (foreign = 0)
+  const zPlane = {
+    type: 'surface',
+    x: [[-L, -L], [L, L]],
+    y: [[-L, L], [-L, L]],
+    z: [[0, 0], [0, 0]],
+    opacity: 0.2,
+    showscale: false,
+    name: 'z = 0'
+  };
+
+  // Dovish / Hawkish label based on foreign (z)
+  const foreignLabel = foreign >= 0 ? 'Dovish' : 'Hawkish';
+
+  const layout = {
+    scene: {
+      xaxis: {
+        title: 'economic',
+        range: [-limit, limit],
+        zeroline: true,
+        tickvals: tickVals,
+        ticktext: tickText
+      },
+      yaxis: {
+        title: 'social',
+        range: [-limit, limit],
+        zeroline: true,
+        tickvals: tickVals,
+        ticktext: tickText
+      },
+      zaxis: {
+        title: 'foreign',
+        range: [-limit, limit],
+        zeroline: true,
+        tickvals: tickVals,
+        ticktext: tickText
+      },
+      // Labels inside the 3D scene
+      annotations: [
+        // Economic axis side labels
+        {
+          x: -limit, y: 0, z: 0,
+          text: 'Conservative',
+          showarrow: false
+        },
+        {
+          x: limit, y: 0, z: 0,
+          text: 'Liberal',
+          showarrow: false
+        },
+        // Social axis side labels
+        {
+          x: 0, y: -limit, z: 0,
+          text: 'Authoritarian',
+          showarrow: false
+        },
+        {
+          x: 0, y: limit, z: 0,
+          text: 'Libertarian',
+          showarrow: false
+        },
+        // Dovish / Hawkish label near the point
+        {
+          x: 0,
+          y: 0,
+          z: limit,
+          text: 'Dovish',
+          showarrow: false,
+        },
+        {
+          x: 0,
+          y: 0,
+          z: -limit,
+          text: 'Hawkish',
+          showarrow: false,
+        }
+      ]
+    },
+    margin: { l: 0, r: 0, b: 0, t: 0 }
+  };
+
+  const data = [xPlane, yPlane, zPlane, vectorTrace, pointTrace];
+
+  Plotly.newPlot('plot3d', data, layout);
+</script>
+
+</body>
+</html>
